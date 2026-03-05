@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Happy Birthday Vani!</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
+  canvas { display: block; }
+  #overlay {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, #1a0a2e 0%, #0a0010 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #fff; z-index: 10;
+  }
+  #overlay h1 {
+    font-size: 2.8rem; letter-spacing: 0.12em;
+    background: linear-gradient(135deg,#ff6ec7,#ffcc00,#6ec7ff,#ff6ec7);
+    background-size: 300%;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 0.4rem; animation: shimmer 2.5s linear infinite;
+  }
+  #overlay h2 { font-size: 1.1rem; color: #ffcc00bb; margin-bottom: 1.5rem; letter-spacing: 0.3em; }
+  #overlay p { color: #ccc; font-size: 0.88rem; margin: 0.2rem 0; letter-spacing: 0.1em; }
+  #overlay .hint { margin-top: 1.8rem; font-size: 0.85rem; color: #ff88cc; animation: pulse 1.5s infinite; }
+  #crosshair { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;pointer-events:none;z-index:5;display:none; }
+  #crosshair::before,#crosshair::after { content:'';position:absolute;background:rgba(255,255,255,0.85); }
+  #crosshair::before { width:2px;height:100%;left:50%;transform:translateX(-50%); }
+  #crosshair::after { height:2px;width:100%;top:50%;transform:translateY(-50%); }
+  #hud { position:fixed;bottom:18px;left:50%;transform:translateX(-50%);color:#ffcc00aa;font-size:0.75rem;letter-spacing:0.2em;z-index:5;display:none; }
+  #bday { position:fixed;top:14px;left:50%;transform:translateX(-50%);font-size:1.25rem;letter-spacing:0.18em;font-weight:bold;background:linear-gradient(90deg,#ff6ec7,#ffcc00,#6ec7ff,#ff6ec7);background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s linear infinite;z-index:5;display:none; }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  @keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+  #cut-prompt {
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.78); border:2px solid #ffcc00;
+    color:#ffcc00; font-size:1rem; letter-spacing:0.15em;
+    padding:10px 28px; border-radius:30px; z-index:6; display:none;
+    animation:pulse 1.2s infinite; pointer-events:none;
+  }
+  #cut-prompt kbd { background:#ffcc00; color:#000; border-radius:5px; padding:2px 8px; font-weight:bold; }
+  #celebrate {
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    flex-direction:column; z-index:20; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(255,100,200,0.18) 0%, transparent 70%);
+  }
+  #celebrate .big { font-size:3.8rem; animation:popIn 0.5s cubic-bezier(.17,.67,.35,1.3) both; text-align:center; }
+  #celebrate .sub { font-size:1.5rem; color:#ffcc00; letter-spacing:0.2em; margin-top:0.6rem; animation:popIn 0.5s 0.25s cubic-bezier(.17,.67,.35,1.3) both; text-align:center; }
+  @keyframes popIn{from{opacity:0;transform:scale(0.2)}to{opacity:1;transform:scale(1)}}
+  #knife-hud { position:fixed; bottom:28px; right:36px; font-size:2.8rem; z-index:6; display:none; filter:drop-shadow(0 0 10px #fff); animation:knifeFloat 1.5s ease-in-out infinite; }
+  @keyframes knifeFloat{0%,100%{transform:rotate(-20deg) translateY(0)}50%{transform:rotate(-20deg) translateY(-8px)}}
+  /* ── Phone UI ── */
+  #phone-prompt {
+    position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.78); border:2px solid #44ddff;
+    color:#44ddff; font-size:1rem; letter-spacing:0.15em;
+    padding:10px 28px; border-radius:30px; z-index:6; display:none;
+    animation:pulse 1.2s infinite; pointer-events:none;
+  }
+  #phone-prompt kbd { background:#44ddff; color:#000; border-radius:5px; padding:2px 8px; font-weight:bold; }
+  #phone-ui {
+    position:fixed; inset:0; z-index:30; display:none;
+    align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.7); backdrop-filter:blur(6px);
+  }
+  #phone-ui.active { display:flex; }
+  .phone-shell {
+    width:300px; background:linear-gradient(160deg,#1a1a2e,#16213e);
+    border-radius:38px; padding:14px 12px 26px;
+    box-shadow:0 0 0 2px #333, 0 0 40px #44ddff44, 0 20px 60px rgba(0,0,0,0.8);
+    border:1px solid #44ddff22; position:relative;
+    font-family:'Courier New',monospace;
+  }
+  .phone-notch { width:80px; height:20px; background:#111; border-radius:0 0 12px 12px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .phone-notch-cam { width:7px; height:7px; background:#222; border-radius:50%; border:1px solid #444; }
+  .phone-notch-speaker { width:36px; height:3px; background:#222; border-radius:2px; }
+  .phone-screen { background:linear-gradient(180deg,#0d0d1a,#111128); border-radius:22px; overflow:hidden; padding:14px 12px 12px; display:flex; flex-direction:column; min-height:460px; }
+  .phone-time { text-align:center; color:#eee; font-size:2.2rem; font-weight:300; letter-spacing:0.05em; margin-bottom:1px; }
+  .phone-date { text-align:center; color:#777; font-size:0.65rem; margin-bottom:12px; letter-spacing:0.12em; }
+  .music-app { background:linear-gradient(135deg,#1e0a30,#0a1a30); border-radius:16px; padding:12px; flex:1; display:flex; flex-direction:column; border:1px solid #ffffff0d; }
+  .music-app-title { text-align:center; color:#fff; font-size:0.62rem; letter-spacing:0.28em; text-transform:uppercase; margin-bottom:10px; opacity:0.5; }
+  .now-playing-art { width:100%; aspect-ratio:1/0.7; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#ff44aa,#aa44ff,#44aaff); box-shadow:0 0 20px #ff44aa44; position:relative; overflow:hidden; transition:background 0.6s; }
+  .now-playing-art::after { content:''; position:absolute; inset:0; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 60%); }
+  .vinyl { width:60px; height:60px; border-radius:50%; background:conic-gradient(#111 0deg,#222 30deg,#111 60deg,#222 90deg,#111 120deg,#222 150deg,#111 180deg,#222 210deg,#111 240deg,#222 270deg,#111 300deg,#222 330deg,#111 360deg); box-shadow:0 0 0 3px #333,0 0 0 7px #111,0 0 0 9px #333; animation:spin 3s linear infinite paused; position:relative; z-index:1; }
+  .vinyl.playing { animation-play-state:running; }
+  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  .vinyl::after { content:''; position:absolute; inset:50%; transform:translate(-50%,-50%); width:10px; height:10px; background:#ff44aa; border-radius:50%; }
+  .song-info { text-align:center; margin-bottom:8px; }
+  .song-title { color:#fff; font-size:0.85rem; font-weight:bold; letter-spacing:0.04em; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .song-artist { color:#aaa; font-size:0.65rem; letter-spacing:0.1em; }
+  .progress-bar { width:100%; height:3px; background:#2a2a3a; border-radius:2px; margin:6px 0 3px; cursor:pointer; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,#ff44aa,#aa44ff); border-radius:2px; width:0%; transition:width 0.4s linear; }
+  .progress-times { display:flex; justify-content:space-between; color:#555; font-size:0.58rem; margin-bottom:8px; }
+  .controls { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:10px; }
+  .ctrl-btn { background:none; border:none; color:#fff; cursor:pointer; font-size:1.1rem; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:all 0.15s; opacity:0.75; }
+  .ctrl-btn:hover { opacity:1; transform:scale(1.18); }
+  .ctrl-btn.play-pause { background:linear-gradient(135deg,#ff44aa,#aa44ff); width:46px; height:46px; font-size:1.3rem; box-shadow:0 0 14px #ff44aa66; }
+  .ctrl-btn.play-pause:hover { box-shadow:0 0 22px #ff44aaaa; }
+  .volume-row { display:flex; align-items:center; gap:7px; margin-bottom:10px; }
+  .volume-icon { font-size:0.75rem; color:#555; }
+  .volume-slider { flex:1; -webkit-appearance:none; height:3px; background:#2a2a3a; border-radius:2px; outline:none; cursor:pointer; }
+  .volume-slider::-webkit-slider-thumb { -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:#ff44aa; cursor:pointer; }
+  .song-list { flex:1; overflow-y:auto; }
+  .song-list::-webkit-scrollbar { width:3px; }
+  .song-list::-webkit-scrollbar-thumb { background:#ff44aa33; border-radius:2px; }
+  .song-item { display:flex; align-items:center; gap:9px; padding:7px 8px; border-radius:9px; cursor:pointer; transition:background 0.15s; margin-bottom:3px; }
+  .song-item:hover { background:rgba(255,255,255,0.05); }
+  .song-item.active { background:rgba(255,68,170,0.13); border:1px solid #ff44aa22; }
+  .song-num { color:#444; font-size:0.62rem; width:13px; text-align:center; flex-shrink:0; }
+  .song-item.active .song-num { color:#ff44aa; }
+  .song-meta { flex:1; min-width:0; }
+  .song-name { color:#ccc; font-size:0.72rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .song-item.active .song-name { color:#fff; font-weight:bold; }
+  .song-dur { color:#555; font-size:0.6rem; }
+  .eq-bars { display:flex; gap:2px; align-items:flex-end; height:13px; flex-shrink:0; }
+  .eq-bar { width:2px; background:#ff44aa; border-radius:1px; }
+  .eq-bar:nth-child(1){animation:eq1 0.55s ease-in-out infinite alternate;}
+  .eq-bar:nth-child(2){animation:eq1 0.45s 0.1s ease-in-out infinite alternate;}
+  .eq-bar:nth-child(3){animation:eq1 0.6s 0.05s ease-in-out infinite alternate;}
+  @keyframes eq1{from{height:2px}to{height:11px}}
+  .phone-close { position:absolute; top:10px; right:14px; background:none; border:none; color:#555; font-size:1.1rem; cursor:pointer; z-index:1; transition:color 0.15s; }
+  .phone-close:hover { color:#fff; }
+  .eq-vis { display:flex; gap:2px; align-items:flex-end; height:20px; justify-content:center; margin:4px 0 8px; }
+  .eq-v-bar { width:4px; border-radius:2px; background:linear-gradient(to top,#ff44aa,#aa44ff); }
+  .eq-v-bar:nth-child(1){animation:eqv 0.4s ease-in-out infinite alternate;}
+  .eq-v-bar:nth-child(2){animation:eqv 0.3s 0.06s ease-in-out infinite alternate;}
+  .eq-v-bar:nth-child(3){animation:eqv 0.5s 0.12s ease-in-out infinite alternate;}
+  .eq-v-bar:nth-child(4){animation:eqv 0.35s 0.04s ease-in-out infinite alternate;}
+  .eq-v-bar:nth-child(5){animation:eqv 0.45s 0.09s ease-in-out infinite alternate;}
+  @keyframes eqv{from{height:3px}to{height:18px}}
+</style>
+</head>
+<body>
+<div id="overlay">
+  <h1>🎂 Happy Birthday Vani! 🎉</h1>
+  <h2>✨ BIRTHDAY HOUSE PARTY ✨</h2>
+  <p>WASD &mdash; Move &nbsp;|&nbsp; MOUSE &mdash; Look</p>
+  <p>SPACE &mdash; Jump &nbsp;|&nbsp; ESC &mdash; Pause</p>
+  <div class="hint">🎈 Click to enter the party! 🎈</div>
+</div>
+<div id="crosshair"></div>
+<div id="hud">WASD · SPACE to jump · ESC to pause</div>
+<div id="bday">🎉 Happy Birthday Vani! 🎂</div>
+<div id="cut-prompt">🔪 Press <kbd>E</kbd> to Cut the Cake!</div>
+<div id="knife-hud">🔪</div>
+<div id="celebrate" style="display:none">
+  <div class="big">🎂✂️🎉<br>Cake Cut!</div>
+  <div class="sub">Happy Birthday Vani! ❤️</div>
+</div>
+
+<div id="phone-prompt">📱 Press <kbd>F</kbd> to use Phone</div>
+<div id="phone-ui">
+  <div class="phone-shell">
+    <button class="phone-close" id="phone-close">✕</button>
+    <div class="phone-notch">
+      <div class="phone-notch-cam"></div>
+      <div class="phone-notch-speaker"></div>
+    </div>
+    <div class="phone-screen">
+      <div class="phone-time" id="phone-clock">00:00</div>
+      <div class="phone-date" id="phone-date">Loading...</div>
+      <div class="music-app">
+        <div class="music-app-title">🎵 Music Player</div>
+        <div class="now-playing-art" id="art-bg">
+          <div class="vinyl" id="vinyl"></div>
+        </div>
+        <div class="eq-vis" id="eq-vis" style="display:none">
+          <div class="eq-v-bar"></div><div class="eq-v-bar"></div>
+          <div class="eq-v-bar"></div><div class="eq-v-bar"></div>
+          <div class="eq-v-bar"></div>
+        </div>
+        <div class="song-info">
+          <div class="song-title" id="now-title">No Song Loaded</div>
+          <div class="song-artist" id="now-artist">Upload your songs below ↓</div>
+        </div>
+        <div class="progress-bar" id="prog-bar">
+          <div class="progress-fill" id="prog-fill"></div>
+        </div>
+        <div class="progress-times">
+          <span id="time-cur">0:00</span><span id="time-tot">0:00</span>
+        </div>
+        <div class="controls">
+          <button class="ctrl-btn" id="btn-prev" title="Previous">⏮</button>
+          <button class="ctrl-btn play-pause" id="btn-play" title="Play/Pause">▶</button>
+          <button class="ctrl-btn" id="btn-next" title="Next">⏭</button>
+        </div>
+        <div class="volume-row">
+          <span class="volume-icon">🔈</span>
+          <input type="range" class="volume-slider" id="vol-slider" min="0" max="1" step="0.01" value="0.8">
+          <span class="volume-icon">🔊</span>
+        </div>
+        <div class="song-list" id="song-list"></div>
+
+      </div>
+    </div>
+  </div>
+</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x100818);
+scene.fog = new THREE.Fog(0x100818, 18, 42);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
+camera.position.set(0, 1.7, 7.5);
+
+const controls = new PointerLockControls(camera, document.body);
+scene.add(controls.getObject());
+
+let phoneOpen = false; // hoisted - used by click handler
+const overlay = document.getElementById('overlay');
+const crosshair = document.getElementById('crosshair');
+const hud = document.getElementById('hud');
+const bday = document.getElementById('bday');
+
+document.addEventListener('click', () => { if(overlay.style.display !== 'none' && !phoneOpen) controls.lock(); });
+controls.addEventListener('lock', () => { overlay.style.display='none'; crosshair.style.display='block'; hud.style.display='block'; bday.style.display='block'; });
+controls.addEventListener('unlock', () => { if(!phoneOpen){ overlay.style.display='flex'; } crosshair.style.display='none'; hud.style.display='none'; bday.style.display='none'; });
+
+/* ── Lights ── */
+scene.add(new THREE.AmbientLight(0xffe0f8, 0.4));
+
+function ptLight(x,y,z,col,int,dist){
+  const l=new THREE.PointLight(col,int,dist);
+  l.position.set(x,y,z); l.castShadow=true;
+  l.shadow.mapSize.width=512; l.shadow.mapSize.height=512;
+  scene.add(l); return l;
+}
+function ceilingLight(x,z,col=0xffe8a0){
+  ptLight(x,3.8,z,col,1.3,14);
+  const b=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,8),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:3}));
+  b.position.set(x,3.9,z); scene.add(b);
+}
+ceilingLight(0,0,0xffd8ff);
+ceilingLight(-5,-5,0xffeeaa);
+ceilingLight(5,-5,0xaaffee);
+ceilingLight(0,8,0xffddbb);
+ceilingLight(-5,8,0xffc8dd);
+
+// Party color accent lights
+[[0xff3388,4,-1],[ 0x44ffcc,-4,-1],[0xffcc00,0,-4],[0x8844ff,4,-6],[0x00ccff,-4,-6]]
+  .forEach(([c,x,z])=>ptLight(x,3.2,z,c,0.65,9));
+
+// Birthday table spotlight
+const cakeSpot = ptLight(0,3.5,4.5,0xffddee,3,6);
+
+/* ── Helpers ── */
+const collidables=[];
+const animated=[];
+
+function box(w,h,d,m){ const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); mesh.castShadow=true; mesh.receiveShadow=true; return mesh; }
+function cyl(rt,rb,h,m,s=12){ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,s),m); mesh.castShadow=true; mesh.receiveShadow=true; return mesh; }
+function sph(r,m,s=16){ const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,s,s),m); mesh.castShadow=true; return mesh; }
+function addTo(g,mesh,x,y,z){ mesh.position.set(x,y,z); g.add(mesh); return mesh; }
+
+/* ── Materials ── */
+const M={
+  floor:new THREE.MeshStandardMaterial({color:0xa07848,roughness:0.8}),
+  rug:new THREE.MeshStandardMaterial({color:0x5a2848,roughness:0.9}),
+  wall:new THREE.MeshStandardMaterial({color:0xf0e6ff,roughness:0.9}),
+  ceil:new THREE.MeshStandardMaterial({color:0xfff0f8,roughness:1}),
+  wood:new THREE.MeshStandardMaterial({color:0x5c3a1e,roughness:0.7}),
+  woodL:new THREE.MeshStandardMaterial({color:0x8b5e3c,roughness:0.6}),
+  woodD:new THREE.MeshStandardMaterial({color:0x3b1f0a,roughness:0.8}),
+  fabric:new THREE.MeshStandardMaterial({color:0x3a5a7a,roughness:0.95}),
+  fabR:new THREE.MeshStandardMaterial({color:0x8b2020,roughness:0.95}),
+  fabG:new THREE.MeshStandardMaterial({color:0x555560,roughness:0.95}),
+  metal:new THREE.MeshStandardMaterial({color:0x888888,metalness:0.9,roughness:0.3}),
+  glass:new THREE.MeshStandardMaterial({color:0x88bbff,transparent:true,opacity:0.25,roughness:0.05}),
+  white:new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.8}),
+  black:new THREE.MeshStandardMaterial({color:0x111111,roughness:0.8}),
+  green:new THREE.MeshStandardMaterial({color:0x2d5a27,roughness:0.9}),
+  pot:new THREE.MeshStandardMaterial({color:0x7a4a30,roughness:0.8}),
+  curtain:new THREE.MeshStandardMaterial({color:0xcc88bb,roughness:0.95,side:THREE.DoubleSide}),
+  // cake
+  cakeB:new THREE.MeshStandardMaterial({color:0xf5c6a0,roughness:0.8}),
+  cakeM:new THREE.MeshStandardMaterial({color:0xfffacd,roughness:0.7}),
+  cakeT:new THREE.MeshStandardMaterial({color:0xffaad4,roughness:0.7}),
+  frost:new THREE.MeshStandardMaterial({color:0xff88cc,roughness:0.5}),
+  frostW:new THREE.MeshStandardMaterial({color:0xffeeff,roughness:0.5}),
+  flame:new THREE.MeshStandardMaterial({color:0xffdd00,emissive:0xff8800,emissiveIntensity:4}),
+  star:new THREE.MeshStandardMaterial({color:0xffdd00,emissive:0xffaa00,emissiveIntensity:1}),
+  tablecloth:new THREE.MeshStandardMaterial({color:0xffe8f8,roughness:0.9}),
+};
+const bMats=[
+  new THREE.MeshStandardMaterial({color:0xff3355,roughness:0.3}),
+  new THREE.MeshStandardMaterial({color:0x3388ff,roughness:0.3}),
+  new THREE.MeshStandardMaterial({color:0xffdd00,roughness:0.3}),
+  new THREE.MeshStandardMaterial({color:0x44cc66,roughness:0.3}),
+  new THREE.MeshStandardMaterial({color:0xff88cc,roughness:0.3}),
+  new THREE.MeshStandardMaterial({color:0xaa44ff,roughness:0.3}),
+];
+
+/* ── Room ── */
+const RW=14,RD=20,RH=4;
+
+const flr=new THREE.Mesh(new THREE.PlaneGeometry(RW,RD),M.floor);
+flr.rotation.x=-Math.PI/2; flr.receiveShadow=true; scene.add(flr);
+
+[[0,0.01,4,6,4,M.rug],[0,0.01,-4,5,7,new THREE.MeshStandardMaterial({color:0x4a2255,roughness:0.9})]].forEach(([x,y,z,w,d,m])=>{
+  const r=new THREE.Mesh(new THREE.PlaneGeometry(w,d),m);
+  r.rotation.x=-Math.PI/2; r.position.set(x,y,z); r.receiveShadow=true; scene.add(r);
+});
+
+const cel=new THREE.Mesh(new THREE.PlaneGeometry(RW,RD),M.ceil);
+cel.rotation.x=Math.PI/2; cel.position.y=RH; cel.receiveShadow=true; scene.add(cel);
+
+function wall(w,h,d,x,y,z,ry=0){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M.wall);
+  m.position.set(x,y,z); m.rotation.y=ry;
+  m.receiveShadow=true; m.castShadow=true;
+  scene.add(m); collidables.push(m); return m;
+}
+wall(RW,RH,0.2,0,RH/2,-RD/2);
+wall(5.5,RH,0.2,-4.25,RH/2,RD/2);
+wall(5.5,RH,0.2,4.25,RH/2,RD/2);
+wall(RW,1.3,0.2,0,RH-0.65,RD/2);
+wall(0.2,RH,RD,-RW/2,RH/2,0);
+wall(0.2,RH,RD,RW/2,RH/2,0);
+wall(6,RH,0.2,-1,RH/2,2);
+wall(4,RH,0.2,5,RH/2,2);
+
+function window3D(x,z){
+  const fr=new THREE.Mesh(new THREE.BoxGeometry(0.2,2,2),M.woodD);
+  fr.position.set(x,2.2,z); scene.add(fr);
+  const gl=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.6,1.6),M.glass);
+  gl.position.set(x,2.2,z); scene.add(gl);
+  for(let s of [-1,1]){
+    const ct=new THREE.Mesh(new THREE.BoxGeometry(0.1,2.2,0.7),M.curtain);
+    ct.position.set(x+(x>0?0.05:-0.05),2.2,z+s*0.85); scene.add(ct);
+  }
+}
+window3D(RW/2-0.1,-3); window3D(RW/2-0.1,-7); window3D(-RW/2+0.1,-6);
+
+/* ══════════════════════════════
+   🎂 BIRTHDAY TABLE (front)
+══════════════════════════════ */
+{
+  const g=new THREE.Group();
+  // Tabletop
+  addTo(g,box(3.0,0.1,1.5,M.tablecloth),0,0.9,0);
+  // Skirt
+  [[0,0.72,0.75,3.0,0.36,0.05],[0,0.72,-0.75,3.0,0.36,0.05],[1.5,0.72,0,0.05,0.36,1.5],[-1.5,0.72,0,0.05,0.36,1.5]]
+    .forEach(([tx,ty,tz,tw,th,td])=>{
+      const s=new THREE.Mesh(new THREE.BoxGeometry(tw,th,td),new THREE.MeshStandardMaterial({color:0xffc8e8,roughness:0.95}));
+      s.position.set(tx,ty,tz); s.castShadow=true; g.add(s);
+    });
+  // Legs
+  for(let [lx,lz] of [[1.3,0.6],[1.3,-0.6],[-1.3,0.6],[-1.3,-0.6]])
+    addTo(g,cyl(0.05,0.05,0.9,M.woodD),lx,0.45,lz);
+  g.position.set(0,0,4.5); scene.add(g); collidables.push(...g.children);
+}
+
+
+
+/* ══════════════════════════════
+   🎈 BALLOONS
+══════════════════════════════ */
+const balloonPool=[];
+function balloon(x,y,z,mi){
+  const g=new THREE.Group();
+  const body=sph(0.22,bMats[mi%6],14); body.scale.y=1.32; g.add(body);
+  const knot=sph(0.042,bMats[mi%6],5); knot.position.y=-0.28; g.add(knot);
+  const pts=[new THREE.Vector3(0,-0.29,0),new THREE.Vector3((Math.random()-0.5)*0.08,-1.2,0)];
+  g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xbbbbbb})));
+  g.position.set(x,y,z); scene.add(g);
+  balloonPool.push({g,baseY:y,sp:0.3+Math.random()*0.4,ph:Math.random()*Math.PI*2});
+  return g;
+}
+// Front table cluster
+[[-1.55,3.25,3.7,0],[-1.35,3.6,3.55,4],[-1.65,3.05,3.5,5],
+ [1.55,3.25,3.7,1],[1.35,3.6,3.55,2],[1.65,3.05,3.5,3]].forEach(([x,y,z,mi])=>balloon(x,y,z,mi));
+// Room corners / walls
+[[-5.5,3.2,-8,0],[-5.5,3.55,-8.35,2],[5.5,3.2,-8,1],[5.5,3.55,-8.35,4],
+ [-6,3.3,-3,3],[-5.8,3.6,-2.8,5],[6,3.3,-3,0],[5.8,3.6,-2.8,2],
+ [0,3.3,-9.5,3],[0.3,3.6,-9.3,1],[-2,3.2,9,4],[2,3.2,9,5]].forEach(([x,y,z,mi])=>balloon(x,y,z,mi));
+
+/* ══════════════════════════════
+   🎊 BUNTING + BANNERS
+══════════════════════════════ */
+const buntingCols=[0xff3366,0xffcc00,0x33aaff,0xcc33ff,0xff6600,0x33cc99];
+function bunting(x1,y1,z1,x2,y2,z2,n=12){
+  for(let i=0;i<n;i++){
+    const t=i/(n-1),sag=Math.sin(t*Math.PI)*0.45;
+    const flag=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.19,3),
+      new THREE.MeshStandardMaterial({color:buntingCols[i%6],roughness:0.8,side:THREE.DoubleSide}));
+    flag.position.set(x1+(x2-x1)*t,(y1+(y2-y1)*t)-sag,z1+(z2-z1)*t);
+    flag.rotation.z=Math.PI; scene.add(flag);
+  }
+  const pts=[];
+  for(let i=0;i<=24;i++){const t=i/24;pts.push(new THREE.Vector3(x1+(x2-x1)*t,(y1+(y2-y1)*t)-Math.sin(t*Math.PI)*0.45,z1+(z2-z1)*t));}
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xdddddd})));
+}
+bunting(-6.8,3.7,-2,6.8,3.7,-2,15);
+bunting(-6.8,3.7,-6,6.8,3.7,-6,15);
+bunting(-6.8,3.7,0,6.8,3.7,0,15);
+bunting(-6.8,3.7,-9,6.8,3.7,-9,15);
+bunting(-6.8,3.7,5,6.8,3.7,5,12);
+
+function bdBanner(cx,cy,cz,ry=0,w=3.2,h=0.8){
+  const c=document.createElement('canvas');
+  c.width=1024; c.height=256;
+  const ctx=c.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,1024,0);
+  g.addColorStop(0,'#cc0066'); g.addColorStop(0.5,'#ff8800'); g.addColorStop(1,'#cc0066');
+  ctx.fillStyle=g; ctx.fillRect(0,0,1024,256);
+  // gold border
+  ctx.strokeStyle='#ffdd00'; ctx.lineWidth=14; ctx.strokeRect(7,7,1010,242);
+  ctx.font='bold 100px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#fff'; ctx.shadowColor='#ff0'; ctx.shadowBlur=30;
+  ctx.fillText('✦ Happy Birthday Vani! ✦',512,128);
+  const tex=new THREE.CanvasTexture(c);
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:tex,transparent:true,emissive:0xffffff,emissiveMap:tex,emissiveIntensity:0.4}));
+  mesh.position.set(cx,cy,cz); mesh.rotation.y=ry; scene.add(mesh);
+}
+bdBanner(0,2.85,-9.7);
+bdBanner(-6.85,2.5,-5,Math.PI/2,2.6,0.7);
+bdBanner(6.85,2.5,-5,-Math.PI/2,2.6,0.7);
+
+/* ══════════════════════════════
+   ⭐ STARS
+══════════════════════════════ */
+for(let i=0;i<30;i++){
+  const mesh=new THREE.Mesh(new THREE.OctahedronGeometry(0.07+Math.random()*0.07),M.star);
+  mesh.position.set((Math.random()-0.5)*13,2.4+Math.random()*1.4,(Math.random()-0.5)*19);
+  scene.add(mesh); animated.push({type:'star',mesh,ph:Math.random()*Math.PI*2});
+}
+
+/* ══════════════════════════════
+   🎊 STREAMERS
+══════════════════════════════ */
+const sCols=[0xff3366,0xffcc00,0x33aaff,0xcc33ff,0xff6600,0x33cc99,0xff88ff];
+[[-5,-1],[-3,-1],[3,-1],[5,-1],[-5,-5],[0,-5],[5,-5],[-5,-8],[0,-8],[5,-8],[-4,5],[4,5],[0,7]].forEach(([x,z])=>{
+  for(let j=0;j<3;j++){
+    const len=0.9+Math.random()*1.6;
+    const s=new THREE.Mesh(new THREE.PlaneGeometry(0.045,len),
+      new THREE.MeshStandardMaterial({color:sCols[Math.floor(Math.random()*sCols.length)],roughness:0.9,side:THREE.DoubleSide}));
+    s.position.set(x+(Math.random()-0.5)*0.3,RH-len/2,z+(Math.random()-0.5)*0.3);
+    s.rotation.y=Math.random()*Math.PI; scene.add(s);
+  }
+});
+
+/* ══════════════════════════════
+   🎊 CONFETTI on floor
+══════════════════════════════ */
+const cfCols=[0xff3366,0xffcc00,0x33aaff,0xcc33ff,0xff6600,0x33cc99,0xff88ff,0xaaffaa];
+for(let i=0;i<220;i++){
+  const cf=new THREE.Mesh(new THREE.PlaneGeometry(0.07,0.07),
+    new THREE.MeshStandardMaterial({color:cfCols[i%8],roughness:0.9,side:THREE.DoubleSide}));
+  cf.position.set((Math.random()-0.5)*13.5,0.012,(Math.random()-0.5)*19.5);
+  cf.rotation.x=-Math.PI/2; cf.rotation.z=Math.random()*Math.PI; scene.add(cf);
+}
+
+/* ══════════════════════════════
+   FURNITURE
+══════════════════════════════ */
+function chair(cx,cz,ry=0){
+  const g=new THREE.Group();
+  addTo(g,box(0.55,0.07,0.55,M.wood),0,0.47,0);
+  addTo(g,box(0.55,0.6,0.06,M.wood),0,0.83,-0.25);
+  for(let x of [-0.18,0,0.18]) addTo(g,box(0.04,0.55,0.04,M.woodD),x,0.78,-0.25);
+  for(let[lx,lz]of[[0.21,0.21],[0.21,-0.21],[-0.21,0.21],[-0.21,-0.21]])
+    addTo(g,cyl(0.03,0.03,0.47,M.woodD),lx,0.235,lz);
+  g.position.set(cx,0,cz); g.rotation.y=ry;
+  scene.add(g); collidables.push(...g.children);
+}
+// Around birthday table
+chair(-1.65,4.5,Math.PI/2); chair(1.65,4.5,-Math.PI/2); chair(0,5.5,Math.PI); chair(0,3.5,0);
+
+// Back dining table
+{const g=new THREE.Group();
+  addTo(g,box(2.2,0.1,1.1,M.woodL),0,0.9,0);
+  for(let[lx,lz]of[[0.9,0.4],[0.9,-0.4],[-0.9,0.4],[-0.9,-0.4]])addTo(g,cyl(0.04,0.04,0.9,M.woodD),lx,0.45,lz);
+  g.position.set(0,0,-7); scene.add(g); collidables.push(...g.children);
+}
+chair(-1.4,-7,Math.PI/2); chair(1.4,-7,-Math.PI/2); chair(0,-7.8,Math.PI); chair(0,-6.2,0);
+
+// Sofa
+{const g=new THREE.Group();
+  addTo(g,box(2.2,0.4,0.9,M.fabric),0,0.2,0);
+  addTo(g,box(2.2,0.55,0.2,M.fabric),0,0.67,-0.35);
+  addTo(g,box(0.2,0.55,0.9,M.fabric),-1.1,0.47,0);
+  addTo(g,box(0.2,0.55,0.9,M.fabric),1.1,0.47,0);
+  for(let x of[-0.7,0,0.7])addTo(g,box(0.65,0.18,0.7,new THREE.MeshStandardMaterial({color:0x2a4a6a,roughness:0.95})),x,0.49,0);
+  for(let[lx,lz]of[[0.95,0.35],[0.95,-0.35],[-0.95,0.35],[-0.95,-0.35]])addTo(g,box(0.08,0.12,0.08,M.woodD),lx,0.06,lz);
+  g.position.set(0,0,-2.5); g.rotation.y=Math.PI; scene.add(g); collidables.push(...g.children);
+}
+// Coffee table
+{const g=new THREE.Group();
+  addTo(g,box(1.1,0.06,0.6,M.woodL),0,0.42,0);
+  for(let[lx,lz]of[[0.45,0.24],[0.45,-0.24],[-0.45,0.24],[-0.45,-0.24]])addTo(g,cyl(0.04,0.04,0.42,M.woodD),lx,0.21,lz);
+  g.position.set(0,0,-1.4); scene.add(g); collidables.push(...g.children);
+}
+// Armchairs
+function armchair(cx,cz,ry=0){
+  const g=new THREE.Group();
+  addTo(g,box(0.8,0.35,0.75,M.fabR),0,0.17,0);
+  addTo(g,box(0.8,0.5,0.15,M.fabR),0,0.55,-0.3);
+  addTo(g,box(0.15,0.45,0.75,M.fabR),-0.42,0.4,0);
+  addTo(g,box(0.15,0.45,0.75,M.fabR),0.42,0.4,0);
+  addTo(g,box(0.72,0.14,0.6,new THREE.MeshStandardMaterial({color:0x6a1010,roughness:0.95})),0,0.42,0.05);
+  for(let[lx,lz]of[[0.3,0.3],[0.3,-0.3],[-0.3,0.3],[-0.3,-0.3]])addTo(g,box(0.07,0.1,0.07,M.woodD),lx,0.05,lz);
+  g.position.set(cx,0,cz); g.rotation.y=ry; scene.add(g); collidables.push(...g.children);
+}
+armchair(-2.5,-2.2,Math.PI/6); armchair(2.5,-2.2,-Math.PI/6);
+
+// Side tables + lamps
+function sideTable(cx,cz){
+  const g=new THREE.Group();
+  addTo(g,cyl(0.28,0.28,0.05,M.woodL),0,0.6,0);
+  addTo(g,cyl(0.04,0.04,0.6,M.woodD),0,0.3,0);
+  addTo(g,cyl(0.04,0.04,0.35,M.metal),0,0.8,0);
+  addTo(g,cyl(0.15,0.22,0.22,M.white,8),0,1.05,0);
+  const ll=new THREE.PointLight(0xffdd88,0.8,5); ll.position.set(cx,1.0,cz); scene.add(ll);
+  g.position.set(cx,0,cz); scene.add(g);
+}
+sideTable(-3,-2.0); sideTable(3,-2.0);
+
+// TV
+{const g=new THREE.Group();
+  addTo(g,box(2.0,0.5,0.5,M.woodD),0,0.25,0);
+  addTo(g,box(1.8,1.0,0.07,M.black),0,1.25,0);
+  addTo(g,box(1.65,0.9,0.02,new THREE.MeshStandardMaterial({color:0x112233,emissive:0x0a1a2a,emissiveIntensity:0.5})),0,1.25,0.05);
+  g.position.set(0,0,-9.8); scene.add(g); collidables.push(...g.children);
+}
+// Bookshelf
+{const g=new THREE.Group();
+  addTo(g,box(1.2,2.0,0.3,M.woodD),0,1.0,0);
+  for(let y of[0.2,0.65,1.1,1.55,1.9])addTo(g,box(1.1,0.04,0.28,M.woodL),0,y,0.01);
+  const bkm=[new THREE.MeshStandardMaterial({color:0xcc4444}),new THREE.MeshStandardMaterial({color:0x4444cc}),new THREE.MeshStandardMaterial({color:0x44aa44}),new THREE.MeshStandardMaterial({color:0xaaaa22})];
+  for(let sy of[0.25,0.7,1.15,1.6]){let bx=-0.48;for(let b=0;b<6;b++){const bw=0.1+Math.random()*0.08,bh=0.2+Math.random()*0.12;addTo(g,box(bw,bh,0.22,bkm[b%4]),bx+bw/2,sy+bh/2+0.04,0.01);bx+=bw+0.01;if(bx>0.5)break;}}
+  g.position.set(-6.5,0,-9); g.rotation.y=Math.PI/2; scene.add(g); collidables.push(...g.children);
+}
+// Bed
+{const g=new THREE.Group();
+  addTo(g,box(1.7,0.25,2.2,M.woodD),0,0.125,0);
+  addTo(g,box(1.7,0.7,0.1,M.wood),0,0.55,-1.05);
+  addTo(g,box(1.6,0.22,2.0,M.white),0,0.36,0);
+  addTo(g,box(0.55,0.1,0.4,M.white),-0.35,0.49,-0.75);
+  addTo(g,box(0.55,0.1,0.4,M.white),0.35,0.49,-0.75);
+  addTo(g,box(1.55,0.15,1.3,new THREE.MeshStandardMaterial({color:0xdd44aa,roughness:0.95})),0,0.5,0.3);
+  for(let[lx,lz]of[[0.75,0.95],[0.75,-0.95],[-0.75,0.95],[-0.75,-0.95]])addTo(g,box(0.1,0.15,0.1,M.woodD),lx,-0.075+0.15/2,lz);
+  g.position.set(-4.5,0,5); scene.add(g); collidables.push(...g.children);
+}
+// Wardrobe
+{const g=new THREE.Group();
+  addTo(g,box(1.8,2.2,0.55,M.woodD),0,1.1,0);
+  addTo(g,box(0.04,2.2,0.55,M.woodL),0,1.1,0.001);
+  addTo(g,cyl(0.02,0.02,0.18,M.metal,6),-0.5,1.1,0.29);
+  addTo(g,cyl(0.02,0.02,0.18,M.metal,6),0.5,1.1,0.29);
+  addTo(g,box(1.8,0.06,0.55,M.woodL),0,2.17,0);
+  g.position.set(-6.2,0,6.8); g.rotation.y=Math.PI/2; scene.add(g); collidables.push(...g.children);
+}
+// Plants
+function plant(cx,cz){
+  const g=new THREE.Group();
+  addTo(g,cyl(0.15,0.18,0.3,M.pot,8),0,0.15,0);
+  addTo(g,cyl(0.025,0.025,0.4,M.green),0,0.55,0);
+  for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;const l=new THREE.Mesh(new THREE.SphereGeometry(0.18,8,6),M.green);l.scale.y=0.6;addTo(g,l,Math.cos(a)*0.2,0.75+Math.random()*0.15,Math.sin(a)*0.2);}
+  addTo(g,new THREE.Mesh(new THREE.SphereGeometry(0.2,8,6),M.green),0,0.92,0);
+  g.position.set(cx,0,cz); scene.add(g);
+}
+plant(-6.5,-0.5); plant(6.5,-0.5); plant(-6.5,-4); plant(3,-9.5);
+
+// Kitchen
+{const g=new THREE.Group();
+  addTo(g,box(2.8,0.9,0.6,M.woodD),0,0.45,0);
+  addTo(g,box(2.84,0.06,0.64,M.white),0,0.93,0.02);
+  g.position.set(-5.5,0,-9); g.rotation.y=Math.PI/2; scene.add(g); collidables.push(...g.children);
+}
+{const g=new THREE.Group();
+  addTo(g,box(1.8,0.9,0.6,M.woodD),0,0.45,0);
+  addTo(g,box(1.84,0.06,0.64,M.white),0,0.93,0.02);
+  g.position.set(-6.5,0,-7); scene.add(g); collidables.push(...g.children);
+}
+// Kitchen stools
+function stool(cx,cz){
+  const g=new THREE.Group();
+  addTo(g,cyl(0.2,0.2,0.04,M.wood,8),0,0.7,0);
+  addTo(g,cyl(0.03,0.03,0.7,M.woodD),0,0.35,0);
+  g.position.set(cx,0,cz); scene.add(g); collidables.push(...g.children);
+}
+stool(-5.5,-8.2); stool(-4.5,-8.2);
+
+// Ceiling light fixtures
+function lightFix(x,z){
+  const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.3,6),M.metal);
+  rod.position.set(x,RH-0.15,z); scene.add(rod);
+  const shade=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.18,0.2,12,1,true),M.white);
+  shade.position.set(x,RH-0.45,z); scene.add(shade);
+}
+lightFix(0,0); lightFix(-5,-5); lightFix(5,-5); lightFix(0,8);
+
+// Picture frames
+function picture(cx,cz,w,h,ry,col){
+  const g=new THREE.Group();
+  addTo(g,box(w+0.1,h+0.1,0.04,M.woodD),0,0,0);
+  addTo(g,box(w,h,0.02,new THREE.MeshStandardMaterial({color:col,roughness:0.9})),0,0,0.03);
+  g.position.set(cx,2.2,cz); g.rotation.y=ry; scene.add(g);
+}
+picture(-RW/2+0.15,-5,0.9,0.7,Math.PI/2,0x2266aa);
+picture(-RW/2+0.15,-8,0.8,1.0,Math.PI/2,0xaa4422);
+picture(0,-RD/2+0.15,1.1,0.75,0,0x228844);
+
+/* ══════════════════════════════
+   🔪 CAKE CUTTING SYSTEM
+══════════════════════════════ */
+const CAKE_POS = new THREE.Vector3(0, 0.95, 4.5);
+const CUT_DIST = 2.8;
+
+// ── Knife (3D object that hovers in front of camera) ──
+const knifeGroup = new THREE.Group();
+// Blade
+const bladeMat = new THREE.MeshStandardMaterial({color:0xdddddd,metalness:0.95,roughness:0.1});
+const blade = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.35,0.008), bladeMat);
+blade.position.set(0,0,0); knifeGroup.add(blade);
+// Tip taper
+const tip = new THREE.Mesh(new THREE.ConeGeometry(0.028,0.1,4), bladeMat);
+tip.position.set(0,-0.22,0); knifeGroup.add(tip);
+// Handle
+const handleMat = new THREE.MeshStandardMaterial({color:0x4a2c0a,roughness:0.7});
+const handle = new THREE.Mesh(new THREE.BoxGeometry(0.055,0.18,0.03), handleMat);
+handle.position.set(0,0.265,0); knifeGroup.add(handle);
+// Guard
+const guard = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.025,0.04), new THREE.MeshStandardMaterial({color:0x888888,metalness:0.8}));
+guard.position.set(0,0.165,0); knifeGroup.add(guard);
+knifeGroup.visible = false;
+scene.add(knifeGroup);
+
+// ── Cake slice pieces (pre-built, hidden until cut) ──
+const cakeGroup = scene.getObjectByName ? null : null; // reference stored separately
+let cakeCut = false;
+let cutPhase = 0; // 0=idle, 1=knife-approach, 2=slice-down, 3=split, 4=done
+let cutTimer = 0;
+
+// Build the whole cake as a tracked group
+const mainCakeGroup = new THREE.Group();
+mainCakeGroup.name = 'mainCake';
+mainCakeGroup.position.set(0, 0.95, 4.5);
+scene.add(mainCakeGroup);
+
+// Slice pieces — two halves using CylinderGeometry with thetaLength
+function makeCakeHalf(thetaStart, thetaLen, mat32, ry=0) {
+  const segs = 32;
+  const g = new THREE.Group();
+  // Bottom tier half
+  const bot = new THREE.Mesh(new THREE.CylinderGeometry(0.58,0.58,0.33,segs,1,false,thetaStart,thetaLen), M.cakeB);
+  bot.castShadow=true; g.add(bot);
+  // Bottom frost
+  const fr1 = new THREE.Mesh(new THREE.CylinderGeometry(0.60,0.60,0.055,segs,1,false,thetaStart,thetaLen), M.frost);
+  fr1.castShadow=true; fr1.position.y=0.145; g.add(fr1);
+  // Mid tier
+  const mid = new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.42,0.28,segs,1,false,thetaStart,thetaLen), M.cakeM);
+  mid.position.y = 0.38; g.add(mid);
+  // Top tier
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.26,0.24,segs,1,false,thetaStart,thetaLen), M.cakeT);
+  top.position.y = 0.71; g.add(top);
+  // Cut face (flat plane showing inside)
+  const innerMat = new THREE.MeshStandardMaterial({color:0xf0c8a0,roughness:0.9,side:THREE.DoubleSide});
+  const face1 = new THREE.Mesh(new THREE.PlaneGeometry(1.16,0.33), innerMat);
+  face1.rotation.y = thetaStart; face1.position.set(Math.cos(thetaStart)*0.29, 0, Math.sin(thetaStart)*0.29);
+  g.add(face1);
+  const face2 = new THREE.Mesh(new THREE.PlaneGeometry(1.16,0.33), innerMat);
+  face2.rotation.y = thetaStart+thetaLen; face2.position.set(Math.cos(thetaStart+thetaLen)*0.29, 0, Math.sin(thetaStart+thetaLen)*0.29);
+  g.add(face2);
+  g.visible = false;
+  return g;
+}
+
+const halfA = makeCakeHalf(0, Math.PI, M.cakeB);
+const halfB = makeCakeHalf(Math.PI, Math.PI, M.cakeB);
+mainCakeGroup.add(halfA);
+mainCakeGroup.add(halfB);
+
+// Whole cake mesh (visible before cut)
+const wholeCake = new THREE.Group();
+wholeCake.name = 'wholeCake';
+// (re-add all tiers to wholeCake group — they will be hidden on cut)
+function addTier(r,h,y,mat) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,32), mat);
+  m.position.y=y; m.castShadow=true; wholeCake.add(m);
+}
+addTier(0.58,0.33,0.165, M.cakeB);
+addTier(0.60,0.055,0.31, M.frost);
+addTier(0.42,0.28,0.545, M.cakeM);
+addTier(0.44,0.048,0.67, M.frostW);
+addTier(0.26,0.24,0.875, M.cakeT);
+addTier(0.28,0.042,0.99, M.frost);
+// Decoration dots bottom
+for(let i=0;i<10;i++){const a=(i/10)*Math.PI*2;const d=sph(0.04,new THREE.MeshStandardMaterial({color:0xff4488,emissive:0xff2266,emissiveIntensity:0.5}));d.position.set(Math.cos(a)*0.57,0.26,Math.sin(a)*0.57);wholeCake.add(d);}
+for(let i=0;i<7;i++){const a=(i/7)*Math.PI*2;const d=sph(0.035,new THREE.MeshStandardMaterial({color:0xffdd00,emissive:0xffaa00,emissiveIntensity:0.5}));d.position.set(Math.cos(a)*0.4,0.57,Math.sin(a)*0.4);wholeCake.add(d);}
+// Banner wrap
+const wcanvas=document.createElement('canvas'); wcanvas.width=512; wcanvas.height=130;
+const wctx=wcanvas.getContext('2d');
+const wgrad=wctx.createLinearGradient(0,0,512,0);
+wgrad.addColorStop(0,'#ff44aa'); wgrad.addColorStop(0.5,'#ffcc00'); wgrad.addColorStop(1,'#ff44aa');
+wctx.fillStyle=wgrad; wctx.fillRect(0,0,512,130);
+wctx.font='bold 38px Arial'; wctx.textAlign='center'; wctx.textBaseline='middle';
+wctx.fillStyle='#fff'; wctx.shadowColor='#ff0088'; wctx.shadowBlur=12;
+wctx.fillText('Happy Birthday Vani',256,55);
+wctx.font='28px Arial'; wctx.shadowBlur=6; wctx.fillText('🎂  ❤️  🎉',256,100);
+const wtex=new THREE.CanvasTexture(wcanvas);
+const wwrap=new THREE.Mesh(new THREE.CylinderGeometry(0.59,0.59,0.22,32,1,true),new THREE.MeshStandardMaterial({map:wtex,transparent:true,side:THREE.DoubleSide}));
+wwrap.position.y=0.17; wholeCake.add(wwrap);
+// Candles
+const ccols2=[0xff3366,0xffcc00,0x33ccff,0xcc33ff,0xff6600];
+const candleLights2=[];
+ccols2.forEach((col,i)=>{
+  const a=(i/5)*Math.PI*2, r=i===0?0:0.19;
+  const cx2=Math.cos(a)*r, cz2=Math.sin(a)*r;
+  const candle=cyl(0.026,0.026,0.21,new THREE.MeshStandardMaterial({color:col}),8);
+  candle.position.set(cx2,1.12,cz2); wholeCake.add(candle);
+  const flame=sph(0.045,M.flame,6);
+  flame.scale.y=1.7; flame.position.set(cx2,1.265,cz2); wholeCake.add(flame);
+  animated.push({type:'flame',mesh:flame,i});
+  const fl=new THREE.PointLight(0xffaa44,0.6,2);
+  fl.position.set(cx2,1.28+0.95,cz2+4.5); scene.add(fl);
+  candleLights2.push(fl);
+});
+mainCakeGroup.add(wholeCake);
+
+// ── Fireworks / confetti burst particles ──
+const particles = [];
+function spawnCelebrationBurst() {
+  const colors = [0xff3366,0xffcc00,0x33aaff,0xcc33ff,0xff6600,0xff88ff,0xaaffaa,0xffffff];
+  for(let i=0;i<120;i++){
+    const geo = new THREE.SphereGeometry(0.04+Math.random()*0.04,4,4);
+    const mat2 = new THREE.MeshStandardMaterial({color:colors[i%colors.length],emissive:colors[i%colors.length],emissiveIntensity:1});
+    const mesh2 = new THREE.Mesh(geo,mat2);
+    mesh2.position.set(0,1.5,4.5);
+    const theta = Math.random()*Math.PI*2;
+    const phi = Math.random()*Math.PI;
+    const speed = 0.04+Math.random()*0.1;
+    const vx = Math.sin(phi)*Math.cos(theta)*speed;
+    const vy = Math.cos(phi)*speed*1.5 + 0.05;
+    const vz = Math.sin(phi)*Math.sin(theta)*speed;
+    scene.add(mesh2);
+    particles.push({mesh:mesh2,vx,vy,vz,life:1.0,decay:0.012+Math.random()*0.01});
+  }
+}
+
+// ── State machine ──
+let knifeStartY, knifeEndY;
+
+function startCutAnimation() {
+  if(cakeCut || cutPhase!==0) return;
+  cutPhase = 1;
+  cutTimer = 0;
+  knifeGroup.visible = true;
+  document.getElementById('knife-hud').style.display='none';
+  document.getElementById('cut-prompt').style.display='none';
+  // keep controls locked during animation
+}
+
+function updateCakeCutting(dt) {
+  if(cutPhase===0) return;
+  cutTimer += dt;
+
+  // Knife position: always in front of camera, tilted down
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward);
+  const knifeWorldPos = camera.position.clone().add(forward.multiplyScalar(0.4)).add(new THREE.Vector3(0.15,-0.25,0));
+  knifeGroup.position.copy(knifeWorldPos);
+  knifeGroup.rotation.copy(camera.rotation);
+  knifeGroup.rotateX(-0.4);
+
+  if(cutPhase===1) {
+    // Phase 1: knife flies toward cake (1s)
+    const prog = Math.min(cutTimer/1.0,1);
+    const start = new THREE.Vector3(camera.position.x, camera.position.y-0.3, camera.position.z);
+    const end = new THREE.Vector3(0, 2.5, 4.5);
+    knifeGroup.position.lerpVectors(start,end,prog);
+    knifeGroup.rotation.x = -Math.PI*0.3 + prog*(-Math.PI*0.5);
+    knifeGroup.rotation.y = Math.atan2(end.x-start.x,end.z-start.z)*prog;
+    if(prog>=1){ cutPhase=2; cutTimer=0; }
+  }
+  else if(cutPhase===2) {
+    // Phase 2: knife plunges down through cake (0.6s)
+    const prog = Math.min(cutTimer/0.6,1);
+    knifeGroup.position.set(0, 2.5-prog*1.8, 4.5);
+    knifeGroup.rotation.x = -Math.PI*0.5;
+    knifeGroup.rotation.y = 0;
+    if(prog>=1){ cutPhase=3; cutTimer=0; cutCakeOpen(); }
+  }
+  else if(cutPhase===3) {
+    // Phase 3: halves separate (1.2s)
+    const prog = Math.min(cutTimer/1.2,1);
+    const ease = 1-Math.pow(1-prog,3);
+    halfA.position.x = ease * -0.45;
+    halfA.position.z = ease * 0.2;
+    halfA.rotation.y = ease * 0.25;
+    halfB.position.x = ease * 0.45;
+    halfB.position.z = ease * -0.2;
+    halfB.rotation.y = ease * -0.25;
+    knifeGroup.position.y = 0.7;
+    if(prog>=1){ cutPhase=4; cutTimer=0; showCelebration(); }
+  }
+  else if(cutPhase===4) {
+    // Phase 4: float knife away upward
+    const prog = Math.min(cutTimer/1.5,1);
+    knifeGroup.position.y = 0.7 + prog*2;
+    knifeGroup.rotation.z = prog*Math.PI;
+    if(prog>=1){ knifeGroup.visible=false; cakeCut=true; }
+  }
+}
+
+function cutCakeOpen() {
+  wholeCake.visible = false;
+  halfA.visible = true;
+  halfB.visible = true;
+  candleLights2.forEach(l=>l.intensity=0);
+  spawnCelebrationBurst();
+}
+
+function showCelebration() {
+  const cel = document.getElementById('celebrate'); cel.style.opacity='1';
+  cel.style.display='flex';
+  setTimeout(()=>{
+    cel.style.display='none';
+    document.getElementById('bday').style.display='block';
+  }, 4000);
+}
+
+
+/* ══════════════════════════════
+   📱 3D PHONE ON TABLE
+══════════════════════════════ */
+const PHONE_POS = new THREE.Vector3(0.8, 1.02, 4.5);
+const PHONE_DIST = 2.5;
+
+// Phone body
+const phoneGroup = new THREE.Group();
+const phoneBody = new THREE.Mesh(
+  new THREE.BoxGeometry(0.12, 0.22, 0.015),
+  new THREE.MeshStandardMaterial({color:0x1a1a2a, roughness:0.3, metalness:0.6})
+);
+phoneBody.castShadow = true;
+phoneGroup.add(phoneBody);
+
+// Screen glow
+const screenMat = new THREE.MeshStandardMaterial({
+  color: 0x4488ff, emissive: 0x2244aa, emissiveIntensity: 1.5,
+  roughness: 0.1
+});
+const phoneScreen = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.19, 0.002), screenMat);
+phoneScreen.position.z = 0.009;
+phoneGroup.add(phoneScreen);
+
+// Phone edges (rounded look)
+const edgeMat = new THREE.MeshStandardMaterial({color:0x333344,metalness:0.8,roughness:0.2});
+const phoneEdge = new THREE.Mesh(new THREE.BoxGeometry(0.122,0.222,0.012), edgeMat);
+phoneGroup.add(phoneEdge);
+
+// Home button indicator
+const homeBtn = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.008,0.008,0.002,12),
+  new THREE.MeshStandardMaterial({color:0x444455,metalness:0.9})
+);
+homeBtn.rotation.x = Math.PI/2;
+homeBtn.position.set(0,-0.11,0.009);
+phoneGroup.add(homeBtn);
+
+// Camera dot
+const camDot = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.003,0.003,0.002,8),
+  new THREE.MeshStandardMaterial({color:0x111122,metalness:0.9})
+);
+camDot.rotation.x = Math.PI/2;
+camDot.position.set(0.02,0.105,0.009);
+phoneGroup.add(camDot);
+
+// Small glow light from screen
+const phoneLight = new THREE.PointLight(0x4488ff, 0.4, 1.2);
+phoneLight.position.set(0.8, 1.15, 4.56);
+scene.add(phoneLight);
+
+phoneGroup.position.copy(PHONE_POS);
+phoneGroup.rotation.x = -0.15; // slight tilt back
+phoneGroup.rotation.y = 0.3;
+scene.add(phoneGroup);
+
+/* ══════════════════════════════
+   🎵 MUSIC PLAYER LOGIC
+══════════════════════════════ */
+// Songs loaded from resources/songs/ folder
+const SONG_PATHS = [
+  'resources/songs/song1.mp3',
+  'resources/songs/song2.mp3',
+  'resources/songs/song3.mp3',
+  'resources/songs/song4.mp3',
+];
+const songNames = ['Song 1', 'Song 2', 'Song 3', 'Song 4'];
+let currentSong = -1;
+let isPlaying = false;
+let audioElement = null;
+const artGradients = [
+  'linear-gradient(135deg,#ff44aa,#aa44ff,#44aaff)',
+  'linear-gradient(135deg,#ff8800,#ffcc00,#ff4400)',
+  'linear-gradient(135deg,#00ccff,#0044ff,#8800ff)',
+  'linear-gradient(135deg,#44ff88,#00ff44,#00ccaa)',
+];
+
+function fmtTime(s) {
+  if(!s||isNaN(s)) return '0:00';
+  const m=Math.floor(s/60), sec=Math.floor(s%60);
+  return m+':'+(sec<10?'0':'')+sec;
+}
+
+function renderSongList() {
+  const list = document.getElementById('song-list');
+  list.innerHTML = '';
+  for(let i=0;i<4;i++){
+    const item = document.createElement('div');
+    item.className = 'song-item' + (i===currentSong?' active':'');
+    item.dataset.idx = i;
+    const hasSong = true; // all 4 slots always have songs
+    const num = i + 1;
+    const isNowPlaying = (i===currentSong && isPlaying);
+    const numSpan = isNowPlaying ? '&#9834;' : String(num);
+    const namePart = hasSong
+      ? songNames[i]
+      : '<span style="color:#444;font-style:italic">Empty slot ' + num + '</span>';
+    const durPart = (hasSong && audioElement && i===currentSong && audioElement.duration)
+      ? '<div class="song-dur">' + fmtTime(audioElement.duration) + '</div>' : '';
+    const eqPart = isNowPlaying
+      ? '<div class="eq-bars"><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div></div>' : '';
+    item.innerHTML = '<span class="song-num">' + numSpan + '</span>'
+      + '<div class="song-meta"><div class="song-name">' + namePart + '</div>' + durPart + '</div>'
+      + eqPart;
+    if(hasSong) item.addEventListener('click', ()=>playSong(i));
+    list.appendChild(item);
+  }
+}
+
+function playSong(idx) {
+  if(audioElement) { audioElement.pause(); audioElement.src=''; }
+  audioElement = new Audio();
+  audioElement.src = SONG_PATHS[idx];
+  audioElement.volume = parseFloat(document.getElementById('vol-slider').value);
+  audioElement.play();
+  currentSong = idx;
+  isPlaying = true;
+  document.getElementById('vinyl').classList.add('playing');
+  document.getElementById('eq-vis').style.display='flex';
+  document.getElementById('btn-play').textContent = '⏸';
+  document.getElementById('now-title').textContent = songNames[idx];
+  document.getElementById('now-artist').textContent = '🎵 Now Playing';
+  document.getElementById('art-bg').style.background = artGradients[idx%4];
+  document.getElementById('phone-screen-glow') && (document.getElementById('phone-screen-glow').style.background = artGradients[idx%4]);
+  screenMat.emissive.setHex([0xff2266,0xff8800,0x0066ff,0x00cc66][idx%4]);
+  phoneLight.color.setHex([0xff2266,0xff8800,0x0066ff,0x00cc66][idx%4]);
+  audioElement.addEventListener('ended', ()=>{
+    const next = (currentSong+1)%4;
+    if(songs[next]) playSong(next); else stopPlayer();
+  });
+  renderSongList();
+}
+
+function stopPlayer() {
+  if(audioElement) audioElement.pause();
+  isPlaying = false;
+  document.getElementById('vinyl').classList.remove('playing');
+  document.getElementById('eq-vis').style.display='none';
+  document.getElementById('btn-play').textContent = '▶';
+  renderSongList();
+}
+
+function togglePlay() {
+  if(currentSong<0||!songs[currentSong]) return;
+  if(!audioElement) { playSong(currentSong); return; }
+  if(isPlaying) {
+    audioElement.pause(); isPlaying=false;
+    document.getElementById('vinyl').classList.remove('playing');
+    document.getElementById('eq-vis').style.display='none';
+    document.getElementById('btn-play').textContent='▶';
+  } else {
+    audioElement.play(); isPlaying=true;
+    document.getElementById('vinyl').classList.add('playing');
+    document.getElementById('eq-vis').style.display='flex';
+    document.getElementById('btn-play').textContent='⏸';
+  }
+  renderSongList();
+}
+
+// Progress bar update
+setInterval(()=>{
+  if(!audioElement||!isPlaying) return;
+  const cur=audioElement.currentTime, dur=audioElement.duration||1;
+  document.getElementById('prog-fill').style.width=(cur/dur*100)+'%';
+  document.getElementById('time-cur').textContent=fmtTime(cur);
+  document.getElementById('time-tot').textContent=fmtTime(audioElement.duration);
+},500);
+
+// Seek on progress bar click
+document.getElementById('prog-bar').addEventListener('click',e=>{
+  if(!audioElement) return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  const ratio=(e.clientX-rect.left)/rect.width;
+  audioElement.currentTime=ratio*(audioElement.duration||0);
+});
+
+// Buttons
+document.getElementById('btn-play').addEventListener('click', togglePlay);
+document.getElementById('btn-prev').addEventListener('click', ()=>{
+  const prev=(currentSong-1+4)%4;
+  if(songs[prev]) playSong(prev);
+});
+document.getElementById('btn-next').addEventListener('click', ()=>{
+  const next=(currentSong+1)%4;
+  if(songs[next]) playSong(next);
+});
+document.getElementById('vol-slider').addEventListener('input', e=>{
+  if(audioElement) audioElement.volume=parseFloat(e.target.value);
+});
+
+// Clock
+function updatePhoneClock(){
+  const now=new Date();
+  document.getElementById('phone-clock').textContent=
+    now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('phone-date').textContent=
+    now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+}
+updatePhoneClock(); setInterval(updatePhoneClock,30000);
+
+// Phone open/close
+const phoneUI = document.getElementById('phone-ui');
+const phonePrompt = document.getElementById('phone-prompt');
+
+function openPhone(){
+  phoneOpen=true;
+  phoneUI.classList.add('active');
+  controls.unlock();
+  if(currentSong < 0) playSong(0); // auto-start song 1
+  else renderSongList();
+}
+function closePhone(){
+  phoneOpen=false;
+  phoneUI.classList.remove('active');
+  // Re-lock pointer — overlay stays hidden since we're resuming game
+  setTimeout(()=>{ if(!phoneOpen) controls.lock(); },100);
+}
+document.getElementById('phone-close').addEventListener('click', closePhone);
+phoneUI.addEventListener('click', e=>{ if(e.target===phoneUI) closePhone(); });
+
+// Phone screen glow animation in game world
+let phoneScreenGlowT=0;
+
+/* ── Keyboard & Physics ── */
+const keys={};
+window.addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(e.code==='KeyE' && cutPhase===0 && !cakeCut) {
+    const dist = camera.position.distanceTo(CAKE_POS);
+    if(dist < CUT_DIST) startCutAnimation();
+  }
+  if(e.code==='KeyF' && !phoneOpen) {
+    const dist2 = camera.position.distanceTo(PHONE_POS);
+    if(dist2 < PHONE_DIST) openPhone();
+  }
+  if(e.code==='Escape' && phoneOpen) closePhone();
+});
+window.addEventListener('keyup',e=>delete keys[e.code]);
+
+const MS=0.08; let velY=0; const grav=-0.016,jmpS=0.27; let grnd=true; const gndY=1.7;
+const dir=new THREE.Vector3(); const ray=new THREE.Raycaster();
+function canMove(d,dist){ ray.set(camera.position.clone(),d.clone().normalize()); const h=ray.intersectObjects(collidables,false); return h.length===0||h[0].distance>dist+0.3; }
+
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+
+  balloonPool.forEach(b=>{ b.g.position.y=b.baseY+Math.sin(t*b.sp+b.ph)*0.09; b.g.rotation.z=Math.sin(t*b.sp*0.7+b.ph)*0.07; });
+
+  animated.forEach(obj=>{
+    if(obj.type==='flame'){
+      obj.mesh.scale.set(1+Math.sin(t*8+obj.i)*0.17,1.7+Math.sin(t*11+obj.i*2)*0.22,1+Math.cos(t*7+obj.i)*0.17);
+    }
+    if(obj.type==='star'){
+      obj.mesh.rotation.y=t*1.6+obj.ph; obj.mesh.rotation.x=t*0.9+obj.ph;
+      const s=0.85+Math.sin(t*2.2+obj.ph)*0.22; obj.mesh.scale.setScalar(s);
+    }
+  });
+
+  cakeSpot.intensity=2.2+Math.sin(t*3)*0.7;
+
+  // Cake cutting update
+
+  updateCakeCutting(0.016);
+
+  // Particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.mesh.position.x+=p.vx;
+    p.mesh.position.y+=p.vy;
+    p.mesh.position.z+=p.vz;
+    p.vy-=0.003;
+    p.life-=p.decay;
+    p.mesh.material.opacity=p.life;
+    p.mesh.material.transparent=true;
+    if(p.life<=0){ scene.remove(p.mesh); particles.splice(i,1); }
+  }
+
+  // Phone screen pulse
+  phoneScreenGlowT += 0.016;
+  screenMat.emissiveIntensity = isPlaying?(1.2+Math.sin(phoneScreenGlowT*4)*0.5):(0.4+Math.sin(phoneScreenGlowT)*0.2);
+  phoneLight.intensity = isPlaying?(0.5+Math.sin(phoneScreenGlowT*4)*0.2):0.15;
+  phoneGroup.rotation.y = 0.3+Math.sin(phoneScreenGlowT*0.4)*0.04;
+  if(controls.isLocked&&!phoneOpen){const pd=camera.position.distanceTo(PHONE_POS);phonePrompt.style.display=pd<PHONE_DIST?'block':'none';}else{phonePrompt.style.display='none';}
+
+  // Proximity prompt
+  if(controls.isLocked && !cakeCut && cutPhase===0){
+    const dist=camera.position.distanceTo(CAKE_POS);
+    const prompt=document.getElementById('cut-prompt');
+    const kh=document.getElementById('knife-hud');
+    if(dist<CUT_DIST){ prompt.style.display='block'; kh.style.display='block'; }
+    else { prompt.style.display='none'; kh.style.display='none'; }
+  }
+
+  if(controls.isLocked){
+    if(keys.KeyW){controls.getDirection(dir);if(canMove(dir,MS))controls.moveForward(MS);}
+    if(keys.KeyS){controls.getDirection(dir);dir.negate();if(canMove(dir,MS))controls.moveForward(-MS);}
+    if(keys.KeyA){dir.setFromMatrixColumn(camera.matrix,0).negate();if(canMove(dir,MS))controls.moveRight(-MS);}
+    if(keys.KeyD){dir.setFromMatrixColumn(camera.matrix,0);if(canMove(dir,MS))controls.moveRight(MS);}
+    if(keys.Space&&grnd){velY=jmpS;grnd=false;}
+    velY+=grav; camera.position.y+=velY;
+    if(camera.position.y<=gndY){camera.position.y=gndY;velY=0;grnd=true;}
+    camera.position.x=Math.max(-RW/2+0.4,Math.min(RW/2-0.4,camera.position.x));
+    camera.position.z=Math.max(-RD/2+0.4,Math.min(RD/2-0.4,camera.position.z));
+  }
+  renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize',()=>{ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); });
+</script>
+</body>
+</html>
